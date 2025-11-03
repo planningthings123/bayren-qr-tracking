@@ -330,11 +330,41 @@
 1. Go to GitHub: github.com/YOUR-USERNAME/bayren-qr-tracking
 2. Click on index.html
 3. Click the pencil icon (Edit)
-4. Delete ALL existing code
-5. Copy and paste THIS entire code
-6. Click "Commit changes"
-7. Wait 20 seconds for Cloudflare to deploy
-8. Test: https://bayren-qr-tracking.pages.dev/?qr=qr1
+4. Leave the second text box empty (optional description)
+5. Make sure **"Commit directly to the main branch"** is selected
+6. Click the green **"Commit changes"** button
+---
+
+### **Step 5: Wait for Deployment**
+
+1. **Wait 20-30 seconds** for Cloudflare to automatically deploy
+2. Cloudflare detects the GitHub change and rebuilds your site
+
+**How to check deployment status:**
+- Go to your Cloudflare dashboard
+- Click on your project: `bayren-qr-tracking`
+- Look for "Deployments" in the left sidebar
+- You should see a new deployment with status "Success" (green checkmark)
+
+---
+
+### **Step 6: Test Your Changes**
+
+1. **Clear your browser cache:**
+   - Windows: Press **Ctrl + Shift + R**
+   - Mac: Press **Cmd + Shift + R**
+
+2. **Visit this URL:**
+```
+   https://35183f86.bayren-qr-tracking.pages.dev/?qr=qr1
+```
+
+3. **You should now see:**
+   - ✅ Your background image
+   - ✅ Garamond font
+   - ✅ Survey with message: "Help Solano County improve your energy efficiency experience!"
+   - ✅ White survey box
+   - ✅ Continue and Skip buttons
 
 ⚠️ IMPORTANT NOTE ABOUT YOUR IMAGE:
 
