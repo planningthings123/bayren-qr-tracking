@@ -6,21 +6,52 @@
   <title>BayREN QR Redirect</title>
   <script src="config.js"></script>
   <style>
+    /* Import Garamond font (using EB Garamond from Google Fonts) */
+    @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700&display=swap');
+    
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      font-family: 'EB Garamond', 'Garamond', serif;
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
       margin: 0;
+      
+      /* CUSTOMIZE THIS: Add your background image */
+      /* Option 1: Use an online image URL */
+      background-image: url('https://www.bayren.org/sites/default/files/styles/slide/public/images/ar_carousel.jpg?itok=NulW0-_k');
+      
+      /* Option 2: Use a gradient as fallback */
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      
+      /* Background settings for image */
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      
       color: white;
     }
+    
+    /* Optional: Add overlay for better text readability */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4); /* Dark overlay - adjust opacity (0.0 to 1.0) */
+      z-index: -1;
+    }
+    
     .container {
       text-align: center;
       padding: 2rem;
       max-width: 500px;
+      z-index: 1;
     }
+    
     .loader {
       border: 4px solid rgba(255,255,255,0.3);
       border-top: 4px solid white;
@@ -30,47 +61,93 @@
       animation: spin 1s linear infinite;
       margin: 2rem auto;
     }
+    
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+    
     .survey-container {
-      background: white;
+      background: rgba(255, 255, 255, 0.95); /* Semi-transparent white */
       color: #333;
       border-radius: 12px;
       padding: 2rem;
       margin-top: 1rem;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      backdrop-filter: blur(10px); /* Blur effect behind container */
     }
+    
+    .survey-container h2 {
+      font-family: 'EB Garamond', 'Garamond', serif;
+      font-weight: 600;
+      font-size: 28px;
+      margin-bottom: 0.5rem;
+      color: #2c3e50;
+    }
+    
+    .survey-container p {
+      font-family: 'EB Garamond', 'Garamond', serif;
+      font-size: 18px;
+      color: #555;
+    }
+    
+    .survey-container label {
+      font-family: 'EB Garamond', 'Garamond', serif;
+      font-weight: 500;
+      font-size: 16px;
+      color: #444;
+    }
+    
     .zip-input {
       width: 100%;
       padding: 12px;
       font-size: 16px;
+      font-family: 'EB Garamond', 'Garamond', serif;
       border: 2px solid #ddd;
       border-radius: 6px;
       margin: 1rem 0;
       box-sizing: border-box;
     }
+    
     .btn {
       background: #667eea;
       color: white;
       border: none;
       padding: 12px 32px;
       font-size: 16px;
+      font-family: 'EB Garamond', 'Garamond', serif;
+      font-weight: 500;
       border-radius: 6px;
       cursor: pointer;
       margin: 0.5rem;
       transition: all 0.3s;
     }
+    
     .btn:hover {
       background: #5568d3;
       transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
     }
+    
     .btn-secondary {
       background: #6c757d;
     }
+    
     .btn-secondary:hover {
       background: #5a6268;
+    }
+    
+    #detected-location {
+      font-family: 'EB Garamond', 'Garamond', serif;
+      font-size: 14px;
+      color: #666;
+    }
+    
+    h1 {
+      font-family: 'EB Garamond', 'Garamond', serif;
+      font-weight: 600;
+      font-size: 36px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     }
   </style>
 </head>
@@ -79,7 +156,7 @@
     <div id="loading">
       <h1>🌉 BayREN Programs</h1>
       <div class="loader"></div>
-      <p>Redirecting you...</p>
+      <p style="font-size: 18px; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">Redirecting you...</p>
     </div>
     <div id="survey" style="display: none;">
       <div class="survey-container">
@@ -87,7 +164,7 @@
         <p>Help us serve your community better!</p>
         <label for="zipcode">Your ZIP Code:</label>
         <input type="text" id="zipcode" class="zip-input" placeholder="e.g., 94901" maxlength="5" pattern="[0-9]{5}">
-        <div id="detected-location" style="margin: 1rem 0; font-size: 14px; color: #666;"></div>
+        <div id="detected-location" style="margin: 1rem 0;"></div>
         <button class="btn" onclick="submitAndRedirect()">Continue to Program</button>
         <button class="btn btn-secondary" onclick="skipSurvey()">Skip Survey</button>
       </div>
@@ -203,3 +280,48 @@
   </script>
 </body>
 </html>
+
+<!-- 
+CUSTOMIZATION INSTRUCTIONS:
+
+1. TO CHANGE BACKGROUND IMAGE:
+   - Find line 19: background-image: url('YOUR_IMAGE_URL_HERE');
+   - Replace YOUR_IMAGE_URL_HERE with your image URL
+   
+   Examples:
+   - Online image: url('https://example.com/your-image.jpg')
+   - From GitHub: url('https://raw.githubusercontent.com/YOUR-USERNAME/bayren-qr-tracking/main/background.jpg')
+   
+2. TO UPLOAD YOUR OWN IMAGE:
+   Option A - GitHub:
+   - Upload image to your GitHub repository
+   - Go to the image file on GitHub
+   - Click "Raw" button
+   - Copy the URL
+   - Use that URL in the CSS
+   
+   Option B - Image hosting service:
+   - Upload to imgur.com, imgbb.com, or similar
+   - Get direct image link
+   - Use that URL in the CSS
+
+3. TO ADJUST OVERLAY DARKNESS:
+   - Find line 30: background: rgba(0, 0, 0, 0.4);
+   - Change 0.4 to any value between 0.0 (invisible) to 1.0 (fully dark)
+   - Higher = darker overlay = better text readability
+
+4. TO CHANGE FONT SIZE:
+   - Survey title: line 69 (currently 28px)
+   - Survey text: line 77 (currently 18px)
+   - Buttons: line 101 (currently 16px)
+
+5. TO CHANGE COLORS:
+   - Button color: line 98 (currently #667eea - blue/purple)
+   - Survey box background: line 56 (currently white with transparency)
+   
+6. DEPLOYMENT:
+   - Replace your existing index.html in GitHub with this code
+   - Commit changes
+   - Cloudflare auto-deploys in 20 seconds
+   - Test by scanning QR codes
+-->
