@@ -28,4 +28,4 @@ const QR_CONFIG = {
   }
 };
 
-const GOOGLE_SHEET_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE";
+const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwXiVjdZUW2oYelONBYBDx9cESfdo1Zg50iDpSGjye7clfIEJoJn3QsM9qLiy-ZRi1L/exec";
