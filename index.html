@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BayREN QR Redirect</title>
+  <script src="config.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .container {
+      text-align: center;
+      padding: 2rem;
+      max-width: 500px;
+    }
+    .loader {
+      border: 4px solid rgba(255,255,255,0.3);
+      border-top: 4px solid white;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 2rem auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .survey-container {
+      background: white;
+      color: #333;
+      border-radius: 12px;
+      padding: 2rem;
+      margin-top: 1rem;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    .zip-input {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      margin: 1rem 0;
+      box-sizing: border-box;
+    }
+    .btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 12px 32px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 0.5rem;
+      transition: all 0.3s;
+    }
+    .btn:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+    }
+    .btn-secondary {
+      background: #6c757d;
+    }
+    .btn-secondary:hover {
+      background: #5a6268;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="loading">
+      <h1>🌉 BayREN Programs</h1>
+      <div class="loader"></div>
+      <p>Redirecting you...</p>
+    </div>
+    <div id="survey" style="display: none;">
+      <div class="survey-container">
+        <h2>Quick Survey</h2>
+        <p>Help us serve your community better!</p>
+        <label for="zipcode">Your ZIP Code:</label>
+        <input type="text" id="zipcode" class="zip-input" placeholder="e.g., 94901" maxlength="5" pattern="[0-9]{5}">
+        <div id="detected-location" style="margin: 1rem 0; font-size: 14px; color: #666;"></div>
+        <button class="btn" onclick="submitAndRedirect()">Continue to Program</button>
+        <button class="btn btn-secondary" onclick="skipSurvey()">Skip Survey</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let qrCode = null;
+    let config = null;
+    let detectedZip = null;
+    let detectedCity = null;
+    let ipHash = null;
+
+    // Simple hash function for IP address (privacy-preserving)
+    async function hashIP(ip) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(ip + 'bayren-salt-2024');
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // Get QR code from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    qrCode = urlParams.get('qr') || window.location.pathname.split('/').pop().replace('.html', '');
+
+    // Load configuration
+    if (typeof QR_CONFIG !== 'undefined') {
+      config = QR_CONFIG[qrCode];
+    }
+
+    if (!config) {
+      document.getElementById('loading').innerHTML = '<h2>Invalid QR Code</h2><p>Please scan a valid QR code.</p>';
+    } else {
+      // Detect location and IP
+      fetch('https://ipapi.co/json/')
+        .then(res => res.json())
+        .then(async data => {
+          detectedZip = data.postal;
+          detectedCity = data.city;
+          ipHash = await hashIP(data.ip);
+          
+          if (config.surveyEnabled) {
+            showSurvey();
+          } else {
+            logAndRedirect(detectedZip, detectedCity);
+          }
+        })
+        .catch(async () => {
+          ipHash = await hashIP('unknown');
+          if (config.surveyEnabled) {
+            showSurvey();
+          } else {
+            logAndRedirect('Unknown', 'Unknown');
+          }
+        });
+    }
+
+    function showSurvey() {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('survey').style.display = 'block';
+      
+      if (detectedCity && detectedZip) {
+        document.getElementById('detected-location').innerHTML = 
+          `📍 Detected location: ${detectedCity}, CA ${detectedZip}<br><small>Correct this below if needed</small>`;
+        document.getElementById('zipcode').value = detectedZip;
+      }
+    }
+
+    function submitAndRedirect() {
+      const enteredZip = document.getElementById('zipcode').value;
+      const finalZip = enteredZip || detectedZip || 'Not Provided';
+      
+      if (enteredZip && !/^[0-9]{5}$/.test(enteredZip)) {
+        alert('Please enter a valid 5-digit ZIP code');
+        return;
+      }
+      
+      logAndRedirect(finalZip, detectedCity || 'Unknown');
+    }
+
+    function skipSurvey() {
+      logAndRedirect(detectedZip || 'Skipped', detectedCity || 'Unknown');
+    }
+
+    function logAndRedirect(zip, city) {
+      const scanData = {
+        timestamp: new Date().toISOString(),
+        qrCode: qrCode,
+        qrName: config.name,
+        zipCode: zip,
+        city: city,
+        device: /mobile|android|iphone|ipad/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop',
+        userAgent: navigator.userAgent,
+        ipHash: ipHash
+      };
+
+      // Log to Google Sheets
+      if (typeof GOOGLE_SHEET_URL !== 'undefined' && GOOGLE_SHEET_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+        fetch(GOOGLE_SHEET_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(scanData)
+        }).catch(err => console.log('Logging failed:', err));
+      }
+
+      // Redirect after short delay
+      setTimeout(() => {
+        window.location.href = config.destination;
+      }, 500);
+    }
+  </script>
+</body>
+</html>
