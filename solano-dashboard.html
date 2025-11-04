@@ -39,6 +39,23 @@
       font-size: 16px;
     }
     
+    .auto-refresh-badge {
+      display: inline-block;
+      background: #48bb78;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 12px;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    
     .filters {
       background: white;
       border-radius: 16px;
@@ -75,6 +92,35 @@
     
     select:focus, input:focus {
       outline: none;
+      border-color: #667eea;
+    }
+    
+    .date-range-shortcuts {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    
+    .date-shortcut {
+      padding: 6px 12px;
+      background: #edf2f7;
+      border: 2px solid transparent;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #4a5568;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .date-shortcut:hover {
+      background: #e2e8f0;
+    }
+    
+    .date-shortcut.active {
+      background: #667eea;
+      color: white;
       border-color: #667eea;
     }
     
@@ -198,6 +244,7 @@
       display: flex;
       gap: 12px;
       margin-top: 20px;
+      flex-wrap: wrap;
     }
     
     button {
@@ -244,16 +291,15 @@
       margin: 20px 0;
     }
     
-    .info-box {
-      background: #bee3f8;
-      border: 2px solid #4299e1;
-      border-radius: 12px;
-      padding: 20px;
-      margin-top: 20px;
-    }
-    
-    .info-box strong {
-      color: #2c5282;
+    .success-badge {
+      background: #c6f6d5;
+      border: 2px solid #48bb78;
+      color: #22543d;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-top: 12px;
+      display: inline-block;
     }
     
     @media (max-width: 768px) {
@@ -261,6 +307,9 @@
         grid-template-columns: 1fr;
       }
       h1 { font-size: 24px; }
+      .filter-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -273,17 +322,45 @@
     <div id="dashboard" style="display: none;">
       <!-- Header -->
       <div class="header">
-        <h1>🌉 Solano County QR Campaign Dashboard</h1>
-        <p class="subtitle">Real-Time Analytics & Insights</p>
+        <h1>🌉 Solano County QR Campaign Dashboard
+          <span class="auto-refresh-badge" id="autoRefreshBadge">🔄 Auto-refresh: ON</span>
+        </h1>
+        <p class="subtitle">Real-Time Analytics & Insights | Last updated: <span id="lastUpdated">--</span></p>
         <div class="buttons">
-          <button class="btn-primary" onclick="refreshData()">🔄 Refresh Data</button>
+          <button class="btn-primary" onclick="refreshData()">🔄 Refresh Now</button>
           <button class="btn-secondary" onclick="clearFilters()">✖ Clear Filters</button>
+          <button class="btn-secondary" onclick="toggleAutoRefresh()">
+            <span id="autoRefreshBtn">⏸️ Pause Auto-Refresh</span>
+          </button>
         </div>
       </div>
       
       <!-- Filters -->
       <div class="filters">
         <h3 style="margin-bottom: 12px; color: #2d3748;">🔍 Filters</h3>
+        
+        <!-- Date Range Filter -->
+        <div class="filter-group" style="margin-bottom: 16px;">
+          <label>📅 Date Range</label>
+          <div class="date-range-shortcuts">
+            <div class="date-shortcut active" onclick="setDateRange('all')" id="date-all">All Time</div>
+            <div class="date-shortcut" onclick="setDateRange('today')" id="date-today">Today</div>
+            <div class="date-shortcut" onclick="setDateRange('7days')" id="date-7days">Last 7 Days</div>
+            <div class="date-shortcut" onclick="setDateRange('30days')" id="date-30days">Last 30 Days</div>
+            <div class="date-shortcut" onclick="setDateRange('custom')" id="date-custom">Custom Range</div>
+          </div>
+          <div id="customDateInputs" style="display: none; margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+              <label style="font-size: 12px; color: #718096;">From:</label>
+              <input type="date" id="dateFrom" onchange="applyCustomDateRange()">
+            </div>
+            <div>
+              <label style="font-size: 12px; color: #718096;">To:</label>
+              <input type="date" id="dateTo" onchange="applyCustomDateRange()">
+            </div>
+          </div>
+        </div>
+        
         <div class="filter-grid">
           <div class="filter-group">
             <label>🏙️ City</label>
@@ -295,10 +372,6 @@
             <label>📱 QR Code</label>
             <select id="qrFilter" onchange="applyFilters()">
               <option value="all">All QR Codes</option>
-              <option value="qr1">QR Code 1</option>
-              <option value="qr2">QR Code 2</option>
-              <option value="qr3">QR Code 3</option>
-              <option value="qr4">QR Code 4</option>
             </select>
           </div>
           <div class="filter-group">
@@ -317,6 +390,10 @@
               <option value="only">Only Duplicates</option>
             </select>
           </div>
+        </div>
+        
+        <div class="success-badge" id="filterStatus" style="display: none;">
+          ✅ Showing <strong id="filteredCount">0</strong> of <strong id="totalCount">0</strong> scans
         </div>
       </div>
       
@@ -360,24 +437,30 @@
         <div class="chart-title">📍 Top Cities</div>
         <div id="cityList"></div>
       </div>
-      
-      <!-- Setup Instructions -->
-      <div class="info-box">
-        <strong>🔧 Setup Instructions:</strong><br>
-        1. Replace <code>YOUR_GOOGLE_APPS_SCRIPT_URL</code> in line 31 with your actual Web App URL<br>
-        2. Make sure your Apps Script has the doGet function (from Phase 2)<br>
-        3. Your dashboard will connect to live data!
-      </div>
     </div>
   </div>
 
   <script>
-    // ⚠️ REPLACE THIS WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
+    // Configuration
     const SHEET_URL = 'https://script.google.com/macros/s/AKfycbwXiVjdZUW2oYelONBYBDx9cESfdo1Zg50iDpSGjye7clfIEJoJn3QsM9qLiy-ZRi1L/exec';
+    const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes in milliseconds
+    
+    // QR Code Name Mapping
+    const QR_NAMES = {
+      'qr1': 'Page 1 - Single QR',
+      'qr2': 'Page 2 - QR #1',
+      'qr3': 'Page 2 - QR #2',
+      'qr4': 'Page 2 - QR #3'
+    };
     
     let allData = [];
     let filteredData = [];
     let qrChart, deviceChart;
+    let autoRefreshEnabled = true;
+    let autoRefreshTimer = null;
+    let currentDateRange = 'all';
+    let customDateFrom = null;
+    let customDateTo = null;
     
     // Load data from Google Sheet
     async function loadData() {
@@ -390,28 +473,116 @@
           date: row.Timestamp || row.timestamp || '',
           city: row.City || row.city || '',
           qr: (row['QR Code'] || row.qrCode || '').toLowerCase(),
+          qrName: QR_NAMES[(row['QR Code'] || row.qrCode || '').toLowerCase()] || (row['QR Code'] || row.qrCode || ''),
           device: row.Device || row.device || '',
           duplicate: row['Duplicate?'] || row.duplicate || 'No'
         }));
         
-        // Populate city filter
-        const cities = [...new Set(allData.map(d => d.city))].filter(c => c);
-        const cityFilter = document.getElementById('cityFilter');
-        cities.forEach(city => {
-          const option = document.createElement('option');
-          option.value = city;
-          option.textContent = city;
-          cityFilter.appendChild(option);
-        });
+        // Populate filters
+        populateCityFilter();
+        populateQRFilter();
+        
+        // Update last updated time
+        updateLastUpdatedTime();
         
         applyFilters();
         document.getElementById('loading').style.display = 'none';
         document.getElementById('dashboard').style.display = 'block';
         
+        // Start auto-refresh if enabled
+        if (autoRefreshEnabled) {
+          startAutoRefresh();
+        }
+        
       } catch (error) {
         document.getElementById('loading').innerHTML = 
           `<div class="error">❌ Error loading data: ${error.message}<br><br>
-          Make sure you've replaced YOUR_GOOGLE_APPS_SCRIPT_URL_HERE with your actual URL!</div>`;
+          Make sure your Google Apps Script is deployed and accessible!</div>`;
+      }
+    }
+    
+    function populateCityFilter() {
+      const cities = [...new Set(allData.map(d => d.city))].filter(c => c).sort();
+      const cityFilter = document.getElementById('cityFilter');
+      // Clear existing options except "All Cities"
+      cityFilter.innerHTML = '<option value="all">All Cities</option>';
+      cities.forEach(city => {
+        const option = document.createElement('option');
+        option.value = city;
+        option.textContent = city;
+        cityFilter.appendChild(option);
+      });
+    }
+    
+    function populateQRFilter() {
+      const qrCodes = [...new Set(allData.map(d => d.qr))].filter(q => q).sort();
+      const qrFilter = document.getElementById('qrFilter');
+      // Clear existing options except "All QR Codes"
+      qrFilter.innerHTML = '<option value="all">All QR Codes</option>';
+      qrCodes.forEach(qr => {
+        const option = document.createElement('option');
+        option.value = qr;
+        option.textContent = QR_NAMES[qr] || qr.toUpperCase();
+        qrFilter.appendChild(option);
+      });
+    }
+    
+    function updateLastUpdatedTime() {
+      const now = new Date();
+      const timeString = now.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      document.getElementById('lastUpdated').textContent = timeString;
+    }
+    
+    // Date Range Functions
+    function setDateRange(range) {
+      currentDateRange = range;
+      
+      // Update active button
+      document.querySelectorAll('.date-shortcut').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('date-' + range).classList.add('active');
+      
+      // Show/hide custom date inputs
+      document.getElementById('customDateInputs').style.display = 
+        range === 'custom' ? 'grid' : 'none';
+      
+      applyFilters();
+    }
+    
+    function applyCustomDateRange() {
+      customDateFrom = document.getElementById('dateFrom').value;
+      customDateTo = document.getElementById('dateTo').value;
+      applyFilters();
+    }
+    
+    function filterByDateRange(item) {
+      if (!item.date) return true;
+      
+      const itemDate = new Date(item.date);
+      const now = new Date();
+      
+      switch(currentDateRange) {
+        case 'all':
+          return true;
+        case 'today':
+          const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          return itemDate >= todayStart;
+        case '7days':
+          const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+          return itemDate >= sevenDaysAgo;
+        case '30days':
+          const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+          return itemDate >= thirtyDaysAgo;
+        case 'custom':
+          if (!customDateFrom && !customDateTo) return true;
+          const fromDate = customDateFrom ? new Date(customDateFrom) : new Date(0);
+          const toDate = customDateTo ? new Date(customDateTo + 'T23:59:59') : new Date();
+          return itemDate >= fromDate && itemDate <= toDate;
+        default:
+          return true;
       }
     }
     
@@ -422,6 +593,7 @@
       const duplicateFilter = document.getElementById('duplicateFilter').value;
       
       filteredData = allData.filter(item => {
+        if (!filterByDateRange(item)) return false;
         if (cityFilter !== 'all' && item.city !== cityFilter) return false;
         if (qrFilter !== 'all' && item.qr !== qrFilter) return false;
         if (deviceFilter !== 'all' && item.device !== deviceFilter) return false;
@@ -429,6 +601,15 @@
         if (duplicateFilter === 'only' && item.duplicate !== 'Yes') return false;
         return true;
       });
+      
+      // Update filter status badge
+      const filterStatus = document.getElementById('filterStatus');
+      const filteredCount = document.getElementById('filteredCount');
+      const totalCount = document.getElementById('totalCount');
+      
+      filteredCount.textContent = filteredData.length;
+      totalCount.textContent = allData.length;
+      filterStatus.style.display = 'inline-block';
       
       updateMetrics();
       updateCharts();
@@ -455,10 +636,11 @@
     }
     
     function updateCharts() {
-      // QR Code Chart
+      // QR Code Chart - Use names instead of IDs
       const qrCounts = {};
       filteredData.forEach(d => {
-        qrCounts[d.qr] = (qrCounts[d.qr] || 0) + 1;
+        const name = d.qrName || d.qr;
+        qrCounts[name] = (qrCounts[name] || 0) + 1;
       });
       
       const qrData = {
@@ -478,7 +660,29 @@
         options: {
           responsive: true,
           maintainAspectRatio: true,
-          plugins: { legend: { display: false } }
+          plugins: { 
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: function(context) {
+                  return context[0].label;
+                },
+                label: function(context) {
+                  const total = filteredData.length;
+                  const percent = total > 0 ? Math.round((context.parsed.y / total) * 100) : 0;
+                  return `${context.parsed.y} scans (${percent}%)`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                precision: 0
+              }
+            }
+          }
         }
       });
       
@@ -501,7 +705,18 @@
         data: deviceData,
         options: {
           responsive: true,
-          maintainAspectRatio: true
+          maintainAspectRatio: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const total = mobile + desktop;
+                  const percent = total > 0 ? Math.round((context.parsed / total) * 100) : 0;
+                  return `${context.label}: ${context.parsed} (${percent}%)`;
+                }
+              }
+            }
+          }
         }
       });
     }
@@ -537,6 +752,11 @@
       document.getElementById('qrFilter').value = 'all';
       document.getElementById('deviceFilter').value = 'all';
       document.getElementById('duplicateFilter').value = 'hide';
+      setDateRange('all');
+      document.getElementById('dateFrom').value = '';
+      document.getElementById('dateTo').value = '';
+      customDateFrom = null;
+      customDateTo = null;
       applyFilters();
     }
     
@@ -546,8 +766,45 @@
       loadData();
     }
     
+    // Auto-refresh functionality
+    function startAutoRefresh() {
+      if (autoRefreshTimer) {
+        clearInterval(autoRefreshTimer);
+      }
+      autoRefreshTimer = setInterval(() => {
+        console.log('Auto-refreshing data...');
+        loadData();
+      }, AUTO_REFRESH_INTERVAL);
+    }
+    
+    function toggleAutoRefresh() {
+      autoRefreshEnabled = !autoRefreshEnabled;
+      const badge = document.getElementById('autoRefreshBadge');
+      const btn = document.getElementById('autoRefreshBtn');
+      
+      if (autoRefreshEnabled) {
+        badge.textContent = '🔄 Auto-refresh: ON';
+        btn.textContent = '⏸️ Pause Auto-Refresh';
+        startAutoRefresh();
+      } else {
+        badge.textContent = '⏸️ Auto-refresh: OFF';
+        btn.textContent = '▶️ Resume Auto-Refresh';
+        if (autoRefreshTimer) {
+          clearInterval(autoRefreshTimer);
+          autoRefreshTimer = null;
+        }
+      }
+    }
+    
     // Initial load
     loadData();
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      if (autoRefreshTimer) {
+        clearInterval(autoRefreshTimer);
+      }
+    });
   </script>
 </body>
 </html>
