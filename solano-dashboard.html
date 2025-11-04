@@ -16,7 +16,7 @@
     }
     
     .container {
-      max-width: 1400px;
+      max-width: 1600px;
       margin: 0 auto;
     }
     
@@ -54,6 +54,30 @@
     @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.7; }
+    }
+    
+    .growth-indicator {
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      margin-left: 12px;
+    }
+    
+    .growth-indicator.positive {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+    
+    .growth-indicator.negative {
+      background: #fed7d7;
+      color: #c53030;
+    }
+    
+    .growth-indicator.neutral {
+      background: #e2e8f0;
+      color: #4a5568;
     }
     
     .filters {
@@ -142,6 +166,8 @@
     .metric-card.green { border-left-color: #48bb78; }
     .metric-card.blue { border-left-color: #4299e1; }
     .metric-card.orange { border-left-color: #ed8936; }
+    .metric-card.purple { border-left-color: #9f7aea; }
+    .metric-card.pink { border-left-color: #ed64a6; }
     
     .metric-label {
       color: #718096;
@@ -178,11 +204,40 @@
       box-shadow: 0 10px 40px rgba(0,0,0,0.1);
     }
     
+    .chart-card.full-width {
+      grid-column: 1 / -1;
+    }
+    
     .chart-title {
       font-size: 18px;
       font-weight: bold;
       color: #1a202c;
       margin-bottom: 16px;
+    }
+    
+    .chart-subtitle {
+      font-size: 14px;
+      color: #718096;
+      margin-bottom: 16px;
+    }
+    
+    .insight-box {
+      background: #f7fafc;
+      border-left: 4px solid #667eea;
+      padding: 12px 16px;
+      margin-top: 16px;
+      border-radius: 4px;
+    }
+    
+    .insight-box strong {
+      color: #2d3748;
+      font-size: 14px;
+    }
+    
+    .insight-box p {
+      color: #4a5568;
+      font-size: 13px;
+      margin-top: 4px;
     }
     
     .city-list {
@@ -224,6 +279,14 @@
       font-weight: bold;
       color: #1a202c;
       margin-right: 12px;
+    }
+    
+    .city-penetration {
+      font-size: 12px;
+      color: #718096;
+      margin-right: 12px;
+      min-width: 60px;
+      text-align: right;
     }
     
     .city-bar {
@@ -302,6 +365,43 @@
       display: inline-block;
     }
     
+    .conversion-funnel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    
+    .funnel-step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .funnel-bar {
+      flex: 1;
+      height: 40px;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      color: white;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+    
+    .funnel-label {
+      min-width: 150px;
+      font-weight: 600;
+      color: #2d3748;
+    }
+    
+    .funnel-value {
+      margin-left: auto;
+      font-size: 18px;
+    }
+    
     @media (max-width: 768px) {
       .charts {
         grid-template-columns: 1fr;
@@ -322,10 +422,13 @@
     <div id="dashboard" style="display: none;">
       <!-- Header -->
       <div class="header">
-        <h1>🌉 Solano County QR Campaign Dashboard
-          <span class="auto-refresh-badge" id="autoRefreshBadge">🔄 Auto-refresh: ON</span>
-        </h1>
-        <p class="subtitle">Real-Time Analytics & Insights | Last updated: <span id="lastUpdated">--</span></p>
+        <div>
+          <h1>🌉 Solano County QR Campaign Dashboard
+            <span class="auto-refresh-badge" id="autoRefreshBadge">🔄 Auto-refresh: ON</span>
+            <span class="growth-indicator" id="growthIndicator">📊 Calculating...</span>
+          </h1>
+          <p class="subtitle">Real-Time Analytics & Campaign Insights | Last updated: <span id="lastUpdated">--</span></p>
+        </div>
         <div class="buttons">
           <button class="btn-primary" onclick="refreshData()">🔄 Refresh Now</button>
           <button class="btn-secondary" onclick="clearFilters()">✖ Clear Filters</button>
@@ -402,25 +505,59 @@
         <div class="metric-card">
           <div class="metric-label">Total Scans</div>
           <div class="metric-value" id="totalScans">0</div>
+          <div class="metric-sub" id="totalTrend">--</div>
         </div>
         <div class="metric-card green">
-          <div class="metric-label">Unique Scans</div>
-          <div class="metric-value" id="uniqueScans">0</div>
-          <div class="metric-sub" id="uniquePercent">0% of total</div>
+          <div class="metric-label">This Week</div>
+          <div class="metric-value" id="weekScans">0</div>
+          <div class="metric-sub" id="weekChange">vs last week</div>
         </div>
         <div class="metric-card blue">
-          <div class="metric-label">Mobile Scans</div>
+          <div class="metric-label">Peak Hour</div>
+          <div class="metric-value" id="peakHour">--</div>
+          <div class="metric-sub" id="peakHourSub">Most active time</div>
+        </div>
+        <div class="metric-card purple">
+          <div class="metric-label">Top Day</div>
+          <div class="metric-value" id="topDay">--</div>
+          <div class="metric-sub" id="topDaySub">Best performing day</div>
+        </div>
+        <div class="metric-card orange">
+          <div class="metric-label">Avg Conversion</div>
+          <div class="metric-value" id="avgConversion">0%</div>
+          <div class="metric-sub">Survey completion rate</div>
+        </div>
+        <div class="metric-card pink">
+          <div class="metric-label">Mobile Users</div>
           <div class="metric-value" id="mobileScans">0</div>
           <div class="metric-sub" id="mobilePercent">0% of total</div>
         </div>
-        <div class="metric-card orange">
-          <div class="metric-label">Duplicates</div>
-          <div class="metric-value" id="duplicateScans">0</div>
-          <div class="metric-sub" id="duplicatePercent">0% of total</div>
+      </div>
+      
+      <!-- Time-of-Day & Day-of-Week Charts -->
+      <div class="charts">
+        <div class="chart-card">
+          <div class="chart-title">⏰ Scans by Hour of Day</div>
+          <div class="chart-subtitle">When do people engage most?</div>
+          <canvas id="hourChart"></canvas>
+          <div class="insight-box" id="hourInsight"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">📅 Scans by Day of Week</div>
+          <div class="chart-subtitle">Optimal days for outreach</div>
+          <canvas id="dayChart"></canvas>
+          <div class="insight-box" id="dayInsight"></div>
         </div>
       </div>
       
-      <!-- Charts -->
+      <!-- Conversion Funnel -->
+      <div class="chart-card" style="margin-bottom: 20px;">
+        <div class="chart-title">🎯 Conversion Funnel by QR Code</div>
+        <div class="chart-subtitle">Track where people drop off</div>
+        <div id="conversionFunnel"></div>
+      </div>
+      
+      <!-- QR Performance & Device Distribution -->
       <div class="charts">
         <div class="chart-card">
           <div class="chart-title">📊 QR Code Performance</div>
@@ -432,10 +569,12 @@
         </div>
       </div>
       
-      <!-- City Rankings -->
+      <!-- Geographic Penetration -->
       <div class="city-list">
-        <div class="chart-title">📍 Top Cities</div>
+        <div class="chart-title">🗺️ Geographic Penetration</div>
+        <div class="chart-subtitle">Scans vs. city population (reach %)</div>
         <div id="cityList"></div>
+        <div class="insight-box" style="margin-top: 16px;" id="geoInsight"></div>
       </div>
     </div>
   </div>
@@ -443,7 +582,18 @@
   <script>
     // Configuration
     const SHEET_URL = 'https://script.google.com/macros/s/AKfycbwXiVjdZUW2oYelONBYBDx9cESfdo1Zg50iDpSGjye7clfIEJoJn3QsM9qLiy-ZRi1L/exec';
-    const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes in milliseconds
+    const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
+    
+    // ⚠️ UPDATE THIS: Solano County city populations (2023 estimates)
+    const CITY_POPULATIONS = {
+      'Fairfield': 119000,
+      'Vallejo': 121000,
+      'Vacaville': 100000,
+      'Suisun City': 29000,
+      'Benicia': 27000,
+      'Dixon': 20000,
+      'Rio Vista': 10000
+    };
     
     // QR Code Name Mapping
     const QR_NAMES = {
@@ -455,7 +605,7 @@
     
     let allData = [];
     let filteredData = [];
-    let qrChart, deviceChart;
+    let qrChart, deviceChart, hourChart, dayChart;
     let autoRefreshEnabled = true;
     let autoRefreshTimer = null;
     let currentDateRange = 'all';
@@ -468,7 +618,7 @@
         const response = await fetch(SHEET_URL);
         const data = await response.json();
         
-        // Transform data to match expected format
+        // Transform data
         allData = data.map(row => ({
           date: row.Timestamp || row.timestamp || '',
           city: row.City || row.city || '',
@@ -478,18 +628,14 @@
           duplicate: row['Duplicate?'] || row.duplicate || 'No'
         }));
         
-        // Populate filters
         populateCityFilter();
         populateQRFilter();
-        
-        // Update last updated time
         updateLastUpdatedTime();
-        
         applyFilters();
+        
         document.getElementById('loading').style.display = 'none';
         document.getElementById('dashboard').style.display = 'block';
         
-        // Start auto-refresh if enabled
         if (autoRefreshEnabled) {
           startAutoRefresh();
         }
@@ -504,7 +650,6 @@
     function populateCityFilter() {
       const cities = [...new Set(allData.map(d => d.city))].filter(c => c).sort();
       const cityFilter = document.getElementById('cityFilter');
-      // Clear existing options except "All Cities"
       cityFilter.innerHTML = '<option value="all">All Cities</option>';
       cities.forEach(city => {
         const option = document.createElement('option');
@@ -517,7 +662,6 @@
     function populateQRFilter() {
       const qrCodes = [...new Set(allData.map(d => d.qr))].filter(q => q).sort();
       const qrFilter = document.getElementById('qrFilter');
-      // Clear existing options except "All QR Codes"
       qrFilter.innerHTML = '<option value="all">All QR Codes</option>';
       qrCodes.forEach(qr => {
         const option = document.createElement('option');
@@ -537,18 +681,11 @@
       document.getElementById('lastUpdated').textContent = timeString;
     }
     
-    // Date Range Functions
     function setDateRange(range) {
       currentDateRange = range;
-      
-      // Update active button
       document.querySelectorAll('.date-shortcut').forEach(btn => btn.classList.remove('active'));
       document.getElementById('date-' + range).classList.add('active');
-      
-      // Show/hide custom date inputs
-      document.getElementById('customDateInputs').style.display = 
-        range === 'custom' ? 'grid' : 'none';
-      
+      document.getElementById('customDateInputs').style.display = range === 'custom' ? 'grid' : 'none';
       applyFilters();
     }
     
@@ -602,17 +739,15 @@
         return true;
       });
       
-      // Update filter status badge
-      const filterStatus = document.getElementById('filterStatus');
-      const filteredCount = document.getElementById('filteredCount');
-      const totalCount = document.getElementById('totalCount');
-      
-      filteredCount.textContent = filteredData.length;
-      totalCount.textContent = allData.length;
-      filterStatus.style.display = 'inline-block';
+      document.getElementById('filteredCount').textContent = filteredData.length;
+      document.getElementById('totalCount').textContent = allData.length;
+      document.getElementById('filterStatus').style.display = 'inline-block';
       
       updateMetrics();
+      updateGrowthIndicator();
       updateCharts();
+      updateTimeAnalytics();
+      updateConversionFunnel();
       updateCityList();
     }
     
@@ -620,23 +755,260 @@
       const total = filteredData.length;
       const unique = filteredData.filter(d => d.duplicate === 'No').length;
       const mobile = filteredData.filter(d => d.device === 'Mobile').length;
-      const duplicates = total - unique;
       
       document.getElementById('totalScans').textContent = total;
-      document.getElementById('uniqueScans').textContent = unique;
       document.getElementById('mobileScans').textContent = mobile;
-      document.getElementById('duplicateScans').textContent = duplicates;
-      
-      document.getElementById('uniquePercent').textContent = 
-        `${total > 0 ? Math.round((unique / total) * 100) : 0}% of total`;
       document.getElementById('mobilePercent').textContent = 
         `${total > 0 ? Math.round((mobile / total) * 100) : 0}% of total`;
-      document.getElementById('duplicatePercent').textContent = 
-        `${total > 0 ? Math.round((duplicates / total) * 100) : 0}% of total`;
+      
+      // Calculate average conversion rate (simplified - based on non-duplicates)
+      const conversionRate = unique > 0 ? Math.round((unique / total) * 100) : 0;
+      document.getElementById('avgConversion').textContent = conversionRate + '%';
+    }
+    
+    function updateGrowthIndicator() {
+      const now = new Date();
+      const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+      const fourteenDaysAgo = new Date(now - 14 * 24 * 60 * 60 * 1000);
+      
+      const thisWeek = allData.filter(d => new Date(d.date) >= sevenDaysAgo).length;
+      const lastWeek = allData.filter(d => {
+        const date = new Date(d.date);
+        return date >= fourteenDaysAgo && date < sevenDaysAgo;
+      }).length;
+      
+      document.getElementById('weekScans').textContent = thisWeek;
+      
+      const indicator = document.getElementById('growthIndicator');
+      if (lastWeek === 0) {
+        indicator.textContent = '📊 First week';
+        indicator.className = 'growth-indicator neutral';
+        document.getElementById('weekChange').textContent = 'First week of data';
+      } else {
+        const change = ((thisWeek - lastWeek) / lastWeek * 100).toFixed(0);
+        const absChange = Math.abs(change);
+        
+        if (change > 0) {
+          indicator.textContent = `📈 +${absChange}% growth`;
+          indicator.className = 'growth-indicator positive';
+          document.getElementById('weekChange').textContent = `+${absChange}% vs last week`;
+        } else if (change < 0) {
+          indicator.textContent = `📉 -${absChange}% decline`;
+          indicator.className = 'growth-indicator negative';
+          document.getElementById('weekChange').textContent = `-${absChange}% vs last week`;
+        } else {
+          indicator.textContent = '📊 No change';
+          indicator.className = 'growth-indicator neutral';
+          document.getElementById('weekChange').textContent = 'Same as last week';
+        }
+      }
+    }
+    
+    function updateTimeAnalytics() {
+      // Hour of day analysis
+      const hourCounts = {};
+      for (let i = 0; i < 24; i++) hourCounts[i] = 0;
+      
+      filteredData.forEach(d => {
+        if (d.date) {
+          const hour = new Date(d.date).getHours();
+          hourCounts[hour]++;
+        }
+      });
+      
+      // Find peak hour
+      let peakHour = 0;
+      let peakCount = 0;
+      Object.keys(hourCounts).forEach(hour => {
+        if (hourCounts[hour] > peakCount) {
+          peakCount = hourCounts[hour];
+          peakHour = parseInt(hour);
+        }
+      });
+      
+      const peakHourFormatted = peakHour === 0 ? '12 AM' : 
+                                 peakHour < 12 ? `${peakHour} AM` :
+                                 peakHour === 12 ? '12 PM' :
+                                 `${peakHour - 12} PM`;
+      
+      document.getElementById('peakHour').textContent = peakHourFormatted;
+      document.getElementById('peakHourSub').textContent = `${peakCount} scans (${Math.round(peakCount/filteredData.length*100)}%)`;
+      
+      // Day of week analysis
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const dayCounts = {};
+      dayNames.forEach(day => dayCounts[day] = 0);
+      
+      filteredData.forEach(d => {
+        if (d.date) {
+          const dayIndex = new Date(d.date).getDay();
+          dayCounts[dayNames[dayIndex]]++;
+        }
+      });
+      
+      // Find top day
+      let topDay = '';
+      let topDayCount = 0;
+      Object.keys(dayCounts).forEach(day => {
+        if (dayCounts[day] > topDayCount) {
+          topDayCount = dayCounts[day];
+          topDay = day;
+        }
+      });
+      
+      document.getElementById('topDay').textContent = topDay || 'N/A';
+      document.getElementById('topDaySub').textContent = `${topDayCount} scans (${Math.round(topDayCount/filteredData.length*100)}%)`;
+      
+      // Update charts
+      updateHourChart(hourCounts);
+      updateDayChart(dayCounts, dayNames);
+    }
+    
+    function updateHourChart(hourCounts) {
+      const labels = [];
+      const data = [];
+      
+      for (let i = 0; i < 24; i++) {
+        const label = i === 0 ? '12 AM' : 
+                      i < 12 ? `${i} AM` :
+                      i === 12 ? '12 PM' :
+                      `${i - 12} PM`;
+        labels.push(label);
+        data.push(hourCounts[i] || 0);
+      }
+      
+      // Find top 3 hours
+      const sortedHours = Object.keys(hourCounts)
+        .sort((a, b) => hourCounts[b] - hourCounts[a])
+        .slice(0, 3);
+      
+      const top3 = sortedHours.map(h => {
+        const formatted = parseInt(h) === 0 ? '12 AM' : 
+                         parseInt(h) < 12 ? `${h} AM` :
+                         parseInt(h) === 12 ? '12 PM' :
+                         `${parseInt(h) - 12} PM`;
+        return `${formatted} (${hourCounts[h]} scans)`;
+      }).join(', ');
+      
+      document.getElementById('hourInsight').innerHTML = 
+        `<strong>🔥 Peak Hours:</strong><p>${top3}<br>Action: Schedule social media posts and ads during these times for maximum engagement.</p>`;
+      
+      if (hourChart) hourChart.destroy();
+      const ctx = document.getElementById('hourChart').getContext('2d');
+      hourChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Scans',
+            data: data,
+            backgroundColor: '#667eea',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: { 
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const total = filteredData.length;
+                  const percent = total > 0 ? Math.round((context.parsed.y / total) * 100) : 0;
+                  return `${context.parsed.y} scans (${percent}%)`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0 }
+            }
+          }
+        }
+      });
+    }
+    
+    function updateDayChart(dayCounts, dayNames) {
+      const data = dayNames.map(day => dayCounts[day] || 0);
+      
+      // Find top 3 days
+      const sortedDays = Object.keys(dayCounts)
+        .sort((a, b) => dayCounts[b] - dayCounts[a])
+        .slice(0, 3);
+      
+      const top3 = sortedDays.map(d => `${d} (${dayCounts[d]} scans)`).join(', ');
+      
+      document.getElementById('dayInsight').innerHTML = 
+        `<strong>📈 Top Days:</strong><p>${top3}<br>Action: Schedule events and mailer delivery to arrive on these high-engagement days.</p>`;
+      
+      if (dayChart) dayChart.destroy();
+      const ctx = document.getElementById('dayChart').getContext('2d');
+      dayChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: dayNames,
+          datasets: [{
+            label: 'Scans',
+            data: data,
+            backgroundColor: ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b'],
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: { 
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const total = filteredData.length;
+                  const percent = total > 0 ? Math.round((context.parsed.y / total) * 100) : 0;
+                  return `${context.parsed.y} scans (${percent}%)`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0 }
+            }
+          }
+        }
+      });
+    }
+    
+    function updateConversionFunnel() {
+      const qrCodes = [...new Set(filteredData.map(d => d.qr))].filter(q => q).sort();
+      
+      let html = '';
+      qrCodes.forEach(qr => {
+        const qrData = filteredData.filter(d => d.qr === qr);
+        const total = qrData.length;
+        const completed = qrData.filter(d => d.duplicate === 'No').length;
+        const conversionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+        const name = QR_NAMES[qr] || qr;
+        
+        html += `
+          <div class="funnel-step">
+            <div class="funnel-label">${name}</div>
+            <div class="funnel-bar" style="width: ${conversionRate}%;">
+              <span>${total} scans</span>
+              <span class="funnel-value">${conversionRate}%</span>
+            </div>
+          </div>
+        `;
+      });
+      
+      document.getElementById('conversionFunnel').innerHTML = html || '<p style="color: #a0aec0;">No data available</p>';
     }
     
     function updateCharts() {
-      // QR Code Chart - Use names instead of IDs
+      // QR Code Chart
       const qrCounts = {};
       filteredData.forEach(d => {
         const name = d.qrName || d.qr;
@@ -664,9 +1036,6 @@
             legend: { display: false },
             tooltip: {
               callbacks: {
-                title: function(context) {
-                  return context[0].label;
-                },
                 label: function(context) {
                   const total = filteredData.length;
                   const percent = total > 0 ? Math.round((context.parsed.y / total) * 100) : 0;
@@ -678,9 +1047,7 @@
           scales: {
             y: {
               beginAtZero: true,
-              ticks: {
-                precision: 0
-              }
+              ticks: { precision: 0 }
             }
           }
         }
@@ -733,18 +1100,41 @@
       
       const maxCount = sortedCities[0]?.[1] || 1;
       
-      const html = sortedCities.map(([city, count], index) => `
-        <div class="city-item">
-          <div class="city-rank">${index + 1}</div>
-          <div class="city-name">${city}</div>
-          <div class="city-count">${count}</div>
-          <div class="city-bar">
-            <div class="city-bar-fill" style="width: ${(count / maxCount) * 100}%"></div>
+      // Calculate penetration rates
+      let underservedCities = [];
+      
+      const html = sortedCities.map(([city, count], index) => {
+        const population = CITY_POPULATIONS[city] || 0;
+        const penetration = population > 0 ? ((count / population) * 100).toFixed(3) : 0;
+        const penetrationDisplay = population > 0 ? `${penetration}%` : 'N/A';
+        
+        if (population > 0 && parseFloat(penetration) < 0.05) {
+          underservedCities.push(city);
+        }
+        
+        return `
+          <div class="city-item">
+            <div class="city-rank">${index + 1}</div>
+            <div class="city-name">${city}</div>
+            <div class="city-count">${count}</div>
+            <div class="city-penetration">${penetrationDisplay}</div>
+            <div class="city-bar">
+              <div class="city-bar-fill" style="width: ${(count / maxCount) * 100}%"></div>
+            </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
       
       document.getElementById('cityList').innerHTML = html || '<p style="color: #a0aec0;">No data available</p>';
+      
+      // Geographic insights
+      if (underservedCities.length > 0) {
+        document.getElementById('geoInsight').innerHTML = 
+          `<strong>⚠️ Underserved Areas:</strong><p>${underservedCities.join(', ')} have <0.05% population penetration.<br>Action: Increase QR code placement and advertising in these cities.</p>`;
+      } else {
+        document.getElementById('geoInsight').innerHTML = 
+          `<strong>✅ Good Coverage:</strong><p>All major cities have reasonable penetration rates. Continue current strategy.</p>`;
+      }
     }
     
     function clearFilters() {
@@ -766,11 +1156,8 @@
       loadData();
     }
     
-    // Auto-refresh functionality
     function startAutoRefresh() {
-      if (autoRefreshTimer) {
-        clearInterval(autoRefreshTimer);
-      }
+      if (autoRefreshTimer) clearInterval(autoRefreshTimer);
       autoRefreshTimer = setInterval(() => {
         console.log('Auto-refreshing data...');
         loadData();
@@ -799,11 +1186,9 @@
     // Initial load
     loadData();
     
-    // Cleanup on page unload
+    // Cleanup
     window.addEventListener('beforeunload', () => {
-      if (autoRefreshTimer) {
-        clearInterval(autoRefreshTimer);
-      }
+      if (autoRefreshTimer) clearInterval(autoRefreshTimer);
     });
   </script>
 </body>
